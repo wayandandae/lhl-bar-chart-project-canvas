@@ -82,7 +82,7 @@ function drawBarChart(data, options, element) {
   addTitle(options.titleText, options.titleSize, options.titleColour);
 
   drawAxes(options.axisWidth, options.axisColour);
-  yAxisTicks(data, options.axisWidth, options.axisColour);
+  yAxisTicks(data, options.barHeight, options.axisWidth, options.axisColour);
   drawBars(
     data,
     options.barWidth,
@@ -94,30 +94,29 @@ function drawBarChart(data, options, element) {
     options.labelColour
   );
 }
-// get maximum value of x-axis
-function xAxisMax(data) {
-  let xAxisMaxVal = 0;
+// get data length for x-axis
+function xMaxValue(data) {
+  let xMax = 0;
 
   Array.isArray(data[0])
-    ? (xAxisMaxVal = data[0].length) // if data is an array of array
-    : (xAxisMaxVal = data.length);
+    ? (xMax = data[0].length) // if data is an array of array
+    : (xMax = data.length);
 
-  return xAxisMaxVal;
+  return xMax;
 }
-// get maximum value of y-axis
-function yAxisMax(data) {
-  let dataMaxY = 0;
-  let yAxisMaxVal = 0;
+// get maximum value of data for y-axis
+function yMaxValue(data) {
+  let yMax = 0;
 
   if (Array.isArray(data[0])) {
     for (let i = 0; i < data.length; i++) {
-      dataMaxY += Math.max(...data[i]);
+      yMax += Math.max(...data[i]);
     }
   } else {
-    dataMaxY = Math.max(...data);
+    yMax = Math.max(...data);
   }
 
-  return (yAxisMaxVal = parseInt((dataMaxY * 6) / 5));
+  return yMax;
 }
 // check if created data bars are out of bounds
 function isOutOfBounds(xAxisL, yAxisL, xMaxVal, yMaxVal, barW, barH, barS) {
@@ -133,19 +132,32 @@ function isOutOfBounds(xAxisL, yAxisL, xMaxVal, yMaxVal, barW, barH, barS) {
   return error;
 }
 // create ticks on y-axis
-function yAxisTicks(data, axisWidth, axisColour) {
+function yAxisTicks(data, barHeight, axisWidth, axisColour) {
   const canvas = document.querySelector("#canvas");
   const canvasHeight = canvas.height;
   const canvasWidth = canvas.width;
+  const yAxisLength = canvasHeight - padding * 2;
+  let yAxisMax = 0;
+  let tickNumber = 0;
+  let tickWidth = 0;
+  let tickSize = 5;
 
-  const tickSize = 10;
-  const tickNumber = yAxisMax(data);
-  const tickWidth = (canvasHeight - padding * 2) / tickNumber;
+  if (!barHeight) {
+    yAxisMax = Math.ceil((yMaxValue(data) * 6) / 5);
+    barHeight = yAxisLength / yAxisMax;
+    tickNumber = yAxisMax;
+  } else {
+    tickNumber = yAxisLength / barHeight;
+  }
+  tickWidth = yAxisLength / tickNumber;
 
   if (canvas.getContext) {
     const ctx = canvas.getContext("2d");
 
     for (let i = 0; i < tickNumber; i++) {
+      if (i % 5 === 0) {
+        tickSize = 10;
+      }
       drawLine(
         ctx,
         [padding, canvasHeight - padding - i * tickWidth],
@@ -159,6 +171,7 @@ function yAxisTicks(data, axisWidth, axisColour) {
         canvasHeight - padding - i * tickWidth,
         axisColour
       );
+      tickSize = 5;
     }
   }
 }
@@ -260,18 +273,18 @@ function drawBars(
   const yAxisLength = canvasHeight - padding * 2;
 
   if (!barWidth) {
-    barWidth = xAxisLength / xAxisMax(data) - barSpace;
+    barWidth = xAxisLength / xMaxValue(data) - barSpace;
   }
   if (!barHeight) {
-    barHeight = yAxisLength / yAxisMax(data);
+    barHeight = yAxisLength / ((yMaxValue(data) * 6) / 5);
   }
   if (
     canvas.getContext ||
     !isOutOfBounds(
       xAxisLength,
       yAxisLength,
-      xAxisMax(data),
-      yAxisMax(data),
+      xMaxValue(data),
+      (yMaxValue(data) * 6) / 5,
       barWidth,
       barHeight,
       barSpace
@@ -301,7 +314,7 @@ function drawBars(
           barColour
         );
         addDataLabel(
-          `Data ${i + 1}`,
+          `Data \#${i + 1}`,
           padding - 22 + (i + 0.5) * barWidth + (i + 1) * barSpace,
           canvasHeight - padding + 20,
           labelColour
