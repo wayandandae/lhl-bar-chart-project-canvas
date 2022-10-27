@@ -1,16 +1,12 @@
 const padding = 100;
 // function to set parameters for drawBarChart API
 function setParameter() {
-  // const rawData = document.getElementsByClassName("saved_data");
-  // const rawDataArray = [];
+  const rawData = document.getElementsByClassName("saved_data");
+  const data = [];
 
-  // for (let i = 0; i < rawData.length; i++) {
-  //   rawDataArray.push(
-  //     document.getElementsByClassName("saved_data")[i].value
-  //   );
-  // }
-  // rawDataArray[1] ? (data = rawDataArray) : (data = rawDataArray[0]);
-  let data = strToArray(document.getElementById("chartdata").value);
+  for (let i = 0; i < rawData.length; i++) {
+    data.push(strToArray(rawData[i].innerText));
+  }
 
   const options = {
     barWidth: document.getElementById("barwidth").value,
@@ -36,24 +32,25 @@ function setParameter() {
 function addData(inputData) {
   const newData = document.createElement("p");
   const dataArray = strToArray(inputData);
-
   if (isDataValid(dataArray) && isSameLength(dataArray)) {
     newData.setAttribute("type", "text");
     newData.setAttribute("class", "saved_data");
-    newData.setAttribute("value", dataArray);
-    document.getElementById("chartdata").appendChild(newData);
+    newData.innerText = dataArray;
+    document.getElementById("datalist").appendChild(newData);
   } else if (!isDataValid(dataArray)) {
     errorMsg("INVALID_DATA");
   } else if (!isSameLength(dataArray)) {
     errorMsg("DIFF_DATA_LENGTH");
   }
+
+  document.getElementById("chartdata").value = "";
 }
 // check if a new array has the same length as previous entry
 function isSameLength(dataArray) {
-  const saveData = document.getElementsByClassName("saved_data");
+  let saveData = "";
 
-  if (saveData) {
-    return saveData[0].length === dataArray.length;
+  if ((saveData = document.getElementsByClassName("saved_data")[0])) {
+    return strToArray(saveData.innerText).length === dataArray.length;
   }
 
   return true;
@@ -82,7 +79,7 @@ function drawBarChart(data, options, element) {
   addTitle(options.titleText, options.titleSize, options.titleColour);
 
   drawAxes(options.axisWidth, options.axisColour);
-  yAxisTicks(data, options.barHeight, options.axisWidth, options.axisColour);
+  yAxisTicks(data, options.axisWidth, options.axisColour);
   drawBars(
     data,
     options.barWidth,
@@ -94,29 +91,22 @@ function drawBarChart(data, options, element) {
     options.labelColour
   );
 }
-// get data length for x-axis
-function xMaxValue(data) {
-  let xMax = 0;
+// get maximum value of x-axis
+function xAxisMax(data) {
+  let xAxisMaxVal = 0;
 
-  Array.isArray(data[0])
-    ? (xMax = data[0].length) // if data is an array of array
-    : (xMax = data.length);
-
-  return xMax;
+  return (xAxisMaxVal = data[0].length);
 }
-// get maximum value of data for y-axis
-function yMaxValue(data) {
-  let yMax = 0;
+// get maximum value of y-axis
+function yAxisMax(data) {
+  let dataMaxY = 0;
+  let yAxisMaxVal = 0;
 
-  if (Array.isArray(data[0])) {
-    for (let i = 0; i < data.length; i++) {
-      yMax += Math.max(...data[i]);
-    }
-  } else {
-    yMax = Math.max(...data);
+  for (let i = 0; i < data.length; i++) {
+    dataMaxY += Math.max(...data[i]);
   }
 
-  return yMax;
+  return (yAxisMaxVal = parseInt((dataMaxY * 5) / 4));
 }
 // check if created data bars are out of bounds
 function isOutOfBounds(xAxisL, yAxisL, xMaxVal, yMaxVal, barW, barH, barS) {
@@ -132,32 +122,19 @@ function isOutOfBounds(xAxisL, yAxisL, xMaxVal, yMaxVal, barW, barH, barS) {
   return error;
 }
 // create ticks on y-axis
-function yAxisTicks(data, barHeight, axisWidth, axisColour) {
+function yAxisTicks(data, axisWidth, axisColour) {
   const canvas = document.querySelector("#canvas");
   const canvasHeight = canvas.height;
   const canvasWidth = canvas.width;
-  const yAxisLength = canvasHeight - padding * 2;
-  let yAxisMax = 0;
-  let tickNumber = 0;
-  let tickWidth = 0;
-  let tickSize = 5;
 
-  if (!barHeight) {
-    yAxisMax = Math.ceil((yMaxValue(data) * 6) / 5);
-    barHeight = yAxisLength / yAxisMax;
-    tickNumber = yAxisMax;
-  } else {
-    tickNumber = yAxisLength / barHeight;
-  }
-  tickWidth = yAxisLength / tickNumber;
+  const tickSize = 10;
+  const tickNumber = yAxisMax(data);
+  const tickWidth = (canvasHeight - padding * 2) / tickNumber;
 
   if (canvas.getContext) {
     const ctx = canvas.getContext("2d");
 
     for (let i = 0; i < tickNumber; i++) {
-      if (i % 5 === 0) {
-        tickSize = 10;
-      }
       drawLine(
         ctx,
         [padding, canvasHeight - padding - i * tickWidth],
@@ -171,7 +148,6 @@ function yAxisTicks(data, barHeight, axisWidth, axisColour) {
         canvasHeight - padding - i * tickWidth,
         axisColour
       );
-      tickSize = 5;
     }
   }
 }
@@ -273,97 +249,63 @@ function drawBars(
   const yAxisLength = canvasHeight - padding * 2;
 
   if (!barWidth) {
-    barWidth = xAxisLength / xMaxValue(data) - barSpace;
+    barWidth = xAxisLength / xAxisMax(data) - barSpace;
   }
+
   if (!barHeight) {
-    barHeight = yAxisLength / ((yMaxValue(data) * 6) / 5);
+    barHeight = yAxisLength / yAxisMax(data);
   }
+
   if (
     canvas.getContext ||
     !isOutOfBounds(
       xAxisLength,
       yAxisLength,
-      xMaxValue(data),
-      (yMaxValue(data) * 6) / 5,
+      xAxisMax(data),
+      yAxisMax(data),
       barWidth,
       barHeight,
       barSpace
     )
   ) {
     const ctx = canvas.getContext("2d");
+    const yBaseValue = [];
 
-    if (!Array.isArray(data[0])) {
-      for (let i = 0; i < data.length; i++) {
+    for (let i = 0; i < data.length; i++) {
+      for (let j = 0; j < data[i].length; j++) {
+        i === 0 && yBaseValue.push(canvasHeight - padding);
+        const newYBase = yBaseValue[j] - data[i][j] * barHeight;
+        const leftX = padding + j * barWidth + (j + 1) * barSpace;
+
         drawRect(
           ctx,
-          [
-            padding + i * barWidth + (i + 1) * barSpace,
-            canvasHeight - padding - data[i] * barHeight,
-          ],
-          [padding + i * barWidth + (i + 1) * barSpace, canvasHeight - padding],
-          [
-            padding + (i + 1) * barWidth + (i + 1) * barSpace,
-            canvasHeight - padding,
-          ],
-          [
-            padding + (i + 1) * barWidth + (i + 1) * barSpace,
-            canvasHeight - padding - data[i] * barHeight,
-          ],
+          [leftX, newYBase],
+          [leftX, yBaseValue[j]],
+          [leftX + barWidth, yBaseValue[j]],
+          [leftX + barWidth, newYBase],
           barLineWidth,
           barLineColour,
           barColour
         );
         addDataLabel(
-          `Data \#${i + 1}`,
-          padding - 22 + (i + 0.5) * barWidth + (i + 1) * barSpace,
-          canvasHeight - padding + 20,
+          data[i][j],
+          padding - 8 + (j + 0.5) * barWidth + (j + 1) * barSpace,
+          newYBase + 20,
           labelColour
         );
-        addDataLabel(
-          data[i],
-          padding - 8 + (i + 0.5) * barWidth + (i + 1) * barSpace,
-          canvasHeight - data[i] * barHeight - padding + 20,
-          labelColour
-        );
+        i === 0 &&
+          addDataLabel(
+            `Data ${j + 1}`,
+            padding - 22 + (j + 0.45) * barWidth + (j + 1) * barSpace,
+            canvasHeight - padding + 20,
+            labelColour
+          );
+        yBaseValue[j] = newYBase;
       }
     }
-    // } else {
-    //   const yBaseValue = [];
-    //   yBaseValue.push(canvasHeight - padding);
-
-    //   for (let i = 0; i < data.length; i++) {
-    //     for (let j = 0; j < data[i].length; j++) {
-    //       i === 0 && yBaseValue.push(yBaseValue[0]);
-    //       yBaseValue[j] -= data[i][j] * barHeight;
-
-    //       drawRect(
-    //         ctx,
-    //         [
-    //           padding + j * barWidth + (j + 1) * barSpace,
-    //           yBaseValue[i + 1],
-    //         ],
-    //         [padding + j * barWidth + (j + 1) * barSpace, yBaseValue[i]],
-    //         [
-    //           padding + (j + 1) * barWidth + (j + 1) * barSpace,
-    //           yBaseValue[i],
-    //         ],
-    //         [
-    //           padding + (j + 1) * barWidth + (j + 1) * barSpace,
-    //           yBaseValue[i + 1],
-    //         ],
-    //         barLineWidth,
-    //         barLineColour,
-    //         barColour[i]
-    //       );
-    //     }
-    //   }
-    // }
   }
 }
-// button action for adding options
-function addOption(options) {
-  // let optionObject = {options.barWidth};
-}
+
 function errorMsg(errorType) {
   let errorMessage = "";
 
