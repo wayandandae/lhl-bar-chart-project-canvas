@@ -10,7 +10,14 @@
       rel="stylesheet"
       href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
     />
+    <link rel="stylesheet" href="main.css" />
     <style type="text/css"></style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        drawBarChart([[1, 2, 3]], {}, $("#chart"));
+      });
+    </script>
   </head>
   <body>
     <div class="chartinput">
@@ -67,9 +74,8 @@
         />
       </form>
     </div>
-    <div>
-      <canvas id="canvas" height="600" width="800"> </canvas>
-    </div>
+    <div id="chart"></div>
   </body>
   <script type="text/javascript" src="../src/index.js"></script>
+  <script type="text/javascript" src="../src/jQueryHelper.js"></script>
 </html>

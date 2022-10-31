@@ -1,0 +1,7 @@
+#chart {
+  position: relative;
+  width: 1200px;
+  height: 800px;
+  background-color: #ffff;
+  z-index: auto;
+}
