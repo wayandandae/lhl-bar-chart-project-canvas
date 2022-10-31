@@ -4,12 +4,12 @@ Lighthouse Labs Bar Chart Project by Jack
 
 Done:
 
-- bar chart implemented using canvas element
-- cover over 10 bar chart options from user entry
-- use fields and buttons to receive user input
+- replace canvas bar chart with jQuery functions
+- working stacked chart
+- apply chart options from user entry
 
 To do:
 
-- stacked bar chart
-- convert canvas to jQuery functions
-- input validation
+- improve html/css + index.html for demo
+- refactor + esLint
+- elaborate readme.md
