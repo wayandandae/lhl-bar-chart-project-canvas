@@ -111,4 +111,4 @@
     class: "label",
     fontSize: "10",
   };
-})(jQuery);
+}(jQuery));
